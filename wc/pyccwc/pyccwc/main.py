@@ -47,13 +47,7 @@ def main(
     return result
 
 
-def _read_text(filepath: Path | None) -> tuple[str, str]:
-    if filepath is None:
-        sys.stdin = TemporaryFile()
-        return os.fdopen(0).read(), ""
-    return filepath.read_text(), str(filepath)
-
-if __name__ == "__main__":
+def _cli():
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -74,6 +68,17 @@ if __name__ == "__main__":
             count_lines=args.count_lines,
             count_words=args.count_words,
             count_characters=args.count_characters,
-            filepath=filepath
+            filepath=filepath,
         )
     )
+
+
+def _read_text(filepath: Path | None) -> tuple[str, str]:
+    if filepath is None:
+        sys.stdin = TemporaryFile()
+        return os.fdopen(0).read(), ""
+    return filepath.read_text(), str(filepath)
+
+
+if __name__ == "__main__":
+    _cli_wraper()

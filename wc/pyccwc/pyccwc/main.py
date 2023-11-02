@@ -77,15 +77,34 @@ def _cli():
             sys.exit(1)
         file, filepath = open(args.filepath), str(args.filepath)
 
-    counts = count_in_stream(
+    _main(
         file,
         count_bytes=args.count_bytes,
         count_lines=args.count_lines,
         count_words=args.count_words,
         count_characters=args.count_characters,
+        extra=filepath,
     )
 
-    print(format(counts, extra=filepath))
+
+def _main(
+    file: TextIO,
+    *,
+    count_bytes: bool = False,
+    count_lines: bool = False,
+    count_words: bool = False,
+    count_characters: bool = False,
+    extra: str,
+) -> None:
+    counts = count_in_stream(
+        file,
+        count_bytes=count_bytes,
+        count_lines=count_lines,
+        count_words=count_words,
+        count_characters=count_characters,
+    )
+
+    print(format(counts, extra=extra))
     file.close()
 
 

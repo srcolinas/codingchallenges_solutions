@@ -1,49 +1,60 @@
-import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-from tempfile import TemporaryFile
+from typing import TextIO
 
 
-def main(
-    text: str,
+@dataclass(frozen=True, slots=True)
+class Counts:
+    bytes: int | None = None
+    lines: int | None = None
+    words: int | None = None
+    characters: int | None = None
+
+
+def count_in_stream(
+    file: TextIO,
     *,
     count_bytes: bool = False,
     count_lines: bool = False,
     count_words: bool = False,
     count_characters: bool = False,
-    filepath: str = "",
-) -> str:
+) -> Counts:
     default = (
         not count_bytes and not count_lines and not count_words and not count_characters
     )
-    result = "  "
 
-    if count_lines or default:
-        num_lines = len(text.splitlines())
-        result += f"{num_lines}  "
+    num_lines = 0 if count_lines or default else None
+    num_words = 0 if count_words or default else None
+    num_characters = 0 if count_characters else None
+    num_bytes = 0 if count_bytes or default else None
 
-    if count_words or default:
-        word_separators = {"\n", "\r", "\t", "", " "}
-        num_words = 0 if text[-1] in word_separators else 1
-        in_word = True
-        for c in text:
-            if c in word_separators:
-                if in_word:
-                    num_words += 1
-                in_word = False
-            else:
-                in_word = True
-        result += f"{num_words} "
+    for line in file:
+        if num_lines is not None:
+            num_lines += 1
+        if num_words is not None:
+            num_words += len(line.split())
+        if num_characters is not None:
+            num_characters += len(line)
+        if num_bytes is not None:
+            num_bytes += len(line.encode())
 
-    if count_bytes or default:
-        num_bytes = len(bytes(text, encoding="utf-8"))
-        result += f"{num_bytes} "
+    return Counts(
+        bytes=num_bytes, lines=num_lines, words=num_words, characters=num_characters
+    )
 
-    if count_characters:
-        num_chars = len(text)
-        result += f"{num_chars} "
 
-    result += f"{filepath}"
+def format(c: Counts, *, extra: str = "") -> str:
+    result = ""
+    if c.lines is not None:
+        result += f"{c.lines}  "
+    if c.words is not None:
+        result += f"{c.words}  "
+    if c.characters is not None:
+        result += f"{c.characters}  "
+    if c.bytes is not None:
+        result += f"{c.bytes}  "
+    result += extra
     return result
 
 
@@ -59,26 +70,24 @@ def _cli():
         "-m", dest="count_characters", action="store_true", default=False
     )
     args = parser.parse_args()
-    text, filepath = _read_text(args.filepath)
+    if not sys.stdin.isatty():
+        file, filepath = sys.stdin, ""
+    else:
+        if args.filepath is None:
+            sys.exit(1)
+        file, filepath = open(args.filepath), str(args.filepath)
 
-    print(
-        main(
-            text,
-            count_bytes=args.count_bytes,
-            count_lines=args.count_lines,
-            count_words=args.count_words,
-            count_characters=args.count_characters,
-            filepath=filepath,
-        )
+    counts = count_in_stream(
+        file,
+        count_bytes=args.count_bytes,
+        count_lines=args.count_lines,
+        count_words=args.count_words,
+        count_characters=args.count_characters,
     )
 
-
-def _read_text(filepath: Path | None) -> tuple[str, str]:
-    if filepath is None:
-        sys.stdin = TemporaryFile()
-        return os.fdopen(0).read(), ""
-    return filepath.read_text(), str(filepath)
+    print(format(counts, extra=filepath))
+    file.close()
 
 
 if __name__ == "__main__":
-    _cli_wraper()
+    _cli()

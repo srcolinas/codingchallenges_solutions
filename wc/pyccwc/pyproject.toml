@@ -6,7 +6,7 @@ authors = ["Sebastian Rodriguez Colina <srcolinas@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 mypy = "^1.6.1"
 pytest = "^7.4.3"
 ruff = "^0.1.3"

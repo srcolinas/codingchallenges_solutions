@@ -16,5 +16,5 @@ The table below helps to navigate through the solutions that have been implement
 
 Challenge  | Python version notes | Rust version notes |
 ---------- | ----------- | -----------
-[Write Your Own wc Tool](https://codingchallenges.fyi/challenges/challenge-wc) | [link](wc/pyccwc) <br/> Number of bytes not matching | `Not done`
+[Write Your Own wc Tool](https://codingchallenges.fyi/challenges/challenge-wc) | * [link](wc/pyccwc) <br/> * Number of bytes not matching | `Not done`
 ... | ... | ...

@@ -104,7 +104,7 @@ def _cli():
         elif filepath.is_dir():
             print(f"pyccwc: {filepath} is a directory")
             sys.exit(2)
-        file, name = open(args.filepath), str(args.filepath)
+        file, name = open(filepath), str(filepath)
 
     main(
         file,

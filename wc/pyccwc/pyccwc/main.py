@@ -68,8 +68,6 @@ def main(
     extra: str = "",
     write_to: TextIO = sys.stdout,
 ) -> None:
-    
-    
     counts = count_in_stream(
         file,
         count_bytes=count_bytes,

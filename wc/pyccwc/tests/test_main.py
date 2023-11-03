@@ -51,7 +51,6 @@ def test_format(input: Counts, extra: str, output: str):
     assert format(input, extra=extra) == output
 
 
-
 def test_main_from_TextIO():
     file = StringIO("abc\ndef hijk")
     write_to = StringIO("")

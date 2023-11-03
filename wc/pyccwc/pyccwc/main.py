@@ -58,6 +58,31 @@ def format(c: Counts, *, extra: str = "") -> str:
     return result
 
 
+def main(
+    file: TextIO,
+    *,
+    count_bytes: bool = False,
+    count_lines: bool = False,
+    count_words: bool = False,
+    count_characters: bool = False,
+    extra: str = "",
+    write_to: TextIO = sys.stdout,
+) -> None:
+    
+    
+    counts = count_in_stream(
+        file,
+        count_bytes=count_bytes,
+        count_lines=count_lines,
+        count_words=count_words,
+        count_characters=count_characters,
+    )
+
+    result = format(counts, extra=extra)
+    print(result, file=write_to)
+    file.close()
+
+
 def _cli():
     import argparse
 
@@ -71,41 +96,25 @@ def _cli():
     )
     args = parser.parse_args()
     if not sys.stdin.isatty():
-        file, filepath = sys.stdin, ""
+        file, name = sys.stdin, ""
     else:
-        if args.filepath is None:
+        filepath: Path | None = args.filepath
+        if filepath is None:
             sys.exit(1)
-        file, filepath = open(args.filepath), str(args.filepath)
+        elif filepath.is_dir():
+            print(f"pyccwc: {filepath} is a directory")
+            sys.exit(2)
+        file, name = open(args.filepath), str(args.filepath)
 
-    _main(
+    main(
         file,
         count_bytes=args.count_bytes,
         count_lines=args.count_lines,
         count_words=args.count_words,
         count_characters=args.count_characters,
-        extra=filepath,
+        extra=name,
+        write_to=sys.stdout,
     )
-
-
-def _main(
-    file: TextIO,
-    *,
-    count_bytes: bool = False,
-    count_lines: bool = False,
-    count_words: bool = False,
-    count_characters: bool = False,
-    extra: str,
-) -> None:
-    counts = count_in_stream(
-        file,
-        count_bytes=count_bytes,
-        count_lines=count_lines,
-        count_words=count_words,
-        count_characters=count_characters,
-    )
-
-    print(format(counts, extra=extra))
-    file.close()
 
 
 if __name__ == "__main__":

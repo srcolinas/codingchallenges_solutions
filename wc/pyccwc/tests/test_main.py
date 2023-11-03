@@ -2,7 +2,7 @@ from io import StringIO
 
 import pytest
 
-from pyccwc.main import count_in_stream, format, Counts
+from pyccwc.main import count_in_stream, format, main, Counts
 
 
 def test_only_byte_count():
@@ -49,3 +49,12 @@ def test_default():
 )
 def test_format(input: Counts, extra: str, output: str):
     assert format(input, extra=extra) == output
+
+
+
+def test_main_from_TextIO():
+    file = StringIO("abc\ndef hijk")
+    write_to = StringIO("")
+    main(file, write_to=write_to)
+    assert file.closed
+    assert write_to.getvalue() == "2  3  12  \n"

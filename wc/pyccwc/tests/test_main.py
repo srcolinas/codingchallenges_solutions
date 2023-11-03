@@ -45,6 +45,7 @@ def test_default():
         (Counts(lines=4, words=5, characters=6), "", "4  5  6  "),
         (Counts(lines=4, words=5, bytes=7), "", "4  5  7  "),
         (Counts(lines=4, words=5, characters=6, bytes=7), "", "4  5  6  7  "),
+        (Counts(lines=4, words=5, characters=6, bytes=7), "file.txt", "4  5  6  7  file.txt"),
     ],
 )
 def test_format(input: Counts, extra: str, output: str):

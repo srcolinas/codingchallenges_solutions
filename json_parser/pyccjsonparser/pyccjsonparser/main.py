@@ -4,6 +4,16 @@ from pathlib import Path
 from pyccjsonparser.parser import parse, InvalidJson
 
 
+def main(file: Path):
+    if not file.exists():
+        return 1
+    try:
+        parse(file.read_text())
+    except InvalidJson:
+        return 2
+    return 0
+
+
 def _cli() -> None:
     import argparse
 
@@ -12,14 +22,8 @@ def _cli() -> None:
 
     args = parser.parse_args()
 
-    file: Path = args.file
-    if not file.exists():
-        sys.exit(1)
-    try:
-        parse(file.read_text())
-    except InvalidJson:
-        sys.exit(2)
-
+    code = main(args.file)
+    sys.exit(code)
 
 if __name__ == "__main__":
     _cli()

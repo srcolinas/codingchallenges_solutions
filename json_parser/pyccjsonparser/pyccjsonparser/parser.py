@@ -8,3 +8,4 @@ class InvalidJson(Exception):
 def parse(value: str) -> dict[str, Any]:
     if value == "\{\}":
         return {}
+    raise InvalidJson

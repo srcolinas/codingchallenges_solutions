@@ -25,5 +25,6 @@ def _cli() -> None:
     code = main(args.file)
     sys.exit(code)
 
+
 if __name__ == "__main__":
     _cli()

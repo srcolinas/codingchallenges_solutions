@@ -9,4 +9,4 @@ def test_empty_string():
 
 
 def test_empty_object():
-    assert {} == parse("\{\}")
+    assert {} == parse("{}")

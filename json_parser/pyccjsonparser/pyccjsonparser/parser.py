@@ -6,6 +6,6 @@ class InvalidJson(Exception):
 
 
 def parse(value: str) -> dict[str, Any]:
-    if value == "\{\}":
+    if value == "{}":
         return {}
     raise InvalidJson

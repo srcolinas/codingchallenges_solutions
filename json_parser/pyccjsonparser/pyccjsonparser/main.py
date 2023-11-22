@@ -9,7 +9,7 @@ def main(file: Path):
     if not file.exists():
         logging.debug("File doesn't exists")
         return 1
-    
+
     content = file.read_text()
     try:
         parse(content)

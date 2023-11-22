@@ -17,6 +17,10 @@ def test_empty_string():
         ('{"key": "value"}', {"key": "value"}),
         ('{  "k ey"   :    "val\tue"  \n}', {"k ey": "val\tue"}),
         ('{"key": "value",\n"key2": "value"}', {"key": "value", "key2": "value"}),
+        (
+            '{"key1": true, "key2": false, "key3": null, "key4": "value", "key5": 101}',
+            {"key1": True, "key2": False, "key3": None, "key4": "value", "key5": 101},
+        ),
     ],
 )
 def test_valid_cases(input: str, output: dict[str, Any]):
@@ -28,8 +32,9 @@ def test_valid_cases(input: str, output: dict[str, Any]):
     [
         "",
         '""',
-        '{"key": "value",}'
-        '{"key": "value", key2: "value"}'
+        '{"key": "value",}',
+        '{"key": "value", key2: "value"}',
+        '{"key1": true,"key2": False,"key3": null,\n "key4": "value", "key5": 101}',
     ],
 )
 def test_invalid_cases(input: str):

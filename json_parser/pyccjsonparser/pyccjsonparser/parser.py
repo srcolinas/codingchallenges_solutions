@@ -33,7 +33,7 @@ def parse(source: str, /) -> dict[str, Any]:
             if c in spaces:
                 i += 1
                 continue
-            for j in range(i, len(source) -1, 1):
+            for j in range(i, len(source) - 1, 1):
                 buffer += source[j]
                 if buffer.count('"') == 2:
                     buffer_for = _Item.NOTHING
@@ -50,39 +50,41 @@ def parse(source: str, /) -> dict[str, Any]:
             if c in spaces:
                 i += 1
                 continue
-            for j in range(i, len(source) -1, 1):
+            for j in range(i, len(source) - 1, 1):
                 buffer += source[j]
-                if buffer.count('"') == 2:
+                if buffer.count('"') == 2 or source[j+1] in {",", "}"}:
                     buffer_for = _Item.NOTHING
                     break
             else:
                 raise InvalidJson
-            parsed_value = buffer[1:-1]
+            buffer = buffer.lstrip().rstrip()
+            if buffer.startswith('"') and buffer.endswith('"'):
+                parsed_value = buffer[1:-1]
+            elif buffer == "true":
+                parsed_value = True
+            elif buffer == "false":
+                parsed_value = False
+            elif buffer == "null":
+                parsed_value = None
+            else:
+                try:
+                    parsed_value = int(buffer)
+                except ValueError:
+                    try:
+                        parsed_value = float(buffer)
+                    except ValueError:
+                        raise InvalidJson
+
             buffer = ""
             result[parsed_key] = parsed_value
             parsed_key = key_sentinel
             i = j
         else:
             c = source[i]
+            if c in spaces:
+                i += 1
+                continue
             match c:
-                case " ":
-                    i += 1
-                    continue
-                case "\t":
-                    i += 1
-                    continue
-                case "\n":
-                    i += 1
-                    continue
-                case "\r":
-                    i += 1
-                    continue
-                case "\v":
-                    i += 1
-                    continue
-                case "\f":
-                    i += 1
-                    continue
                 case "{":
                     buffer_for = _Item.KEY
                 case ":":

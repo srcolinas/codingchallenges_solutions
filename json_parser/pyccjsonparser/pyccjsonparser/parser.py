@@ -40,6 +40,8 @@ def parse(source: str, /) -> dict[str, Any]:
                     break
             else:
                 raise InvalidJson
+            if not buffer.startswith('"') or not buffer.endswith('"'):
+                raise InvalidJson
             parsed_key = buffer[1:-1]
             buffer = ""
             i = j

@@ -1,16 +1,10 @@
 import string
-from enum import Enum
 from typing import Any
 
 
 class InvalidJson(Exception):
     pass
 
-
-class _Item(Enum):
-    KEY = 1
-    VALUE = 2
-    NOTHING = 3
 
 
 def parse(source: str, /) -> dict[str, Any]:
@@ -19,80 +13,84 @@ def parse(source: str, /) -> dict[str, Any]:
     if source == "{}":
         return {}
     spaces = set(string.whitespace)
+    value_termination_chars = {",", "}"}
     i = 0
-    buffer_for = _Item.NOTHING
-    key_sentinel, value_sentinel = object(), object()
-    parsed_value = value_sentinel
-    parsed_key = key_sentinel
-    buffer = ""
-    result = {}
+    parsing_keyvalue_pair = False
+    parsed_key = ""
+    result: dict[str, Any] = {}
     while i < len(source):
-        if buffer_for is _Item.KEY:
-            c = source[i]
-            parsed_value = value_sentinel
-            if c in spaces:
-                i += 1
-                continue
-            for j in range(i, len(source) - 1, 1):
-                buffer += source[j]
-                if buffer.count('"') == 2:
-                    buffer_for = _Item.NOTHING
-                    break
-            else:
+        if parsing_keyvalue_pair:
+            i = _ignore_chars(i, source, spaces)
+            i, parsed_key = _grab_key(i, source)
+            i = _ignore_chars(i+1, source, spaces)
+            if source[i] != ":":
                 raise InvalidJson
-            if not buffer.startswith('"') or not buffer.endswith('"'):
-                raise InvalidJson
-            parsed_key = buffer[1:-1]
-            buffer = ""
-            i = j
-        elif buffer_for is _Item.VALUE:
-            c = source[i]
-            if c in spaces:
-                i += 1
-                continue
-            for j in range(i, len(source) - 1, 1):
-                buffer += source[j]
-                if buffer.count('"') == 2 or source[j+1] in {",", "}"}:
-                    buffer_for = _Item.NOTHING
-                    break
-            else:
-                raise InvalidJson
-            buffer = buffer.lstrip().rstrip()
-            if buffer.startswith('"') and buffer.endswith('"'):
-                parsed_value = buffer[1:-1]
-            elif buffer == "true":
-                parsed_value = True
-            elif buffer == "false":
-                parsed_value = False
-            elif buffer == "null":
-                parsed_value = None
-            else:
-                try:
-                    parsed_value = int(buffer)
-                except ValueError:
-                    try:
-                        parsed_value = float(buffer)
-                    except ValueError:
-                        raise InvalidJson
-
-            buffer = ""
-            result[parsed_key] = parsed_value
-            parsed_key = key_sentinel
-            i = j
+            i = _ignore_chars(i +1, source, spaces)
+            i, value = _grab_value(i, source, value_termination_chars)
+            result[parsed_key] = _parse_basic_values(value)
+            parsing_keyvalue_pair = False
         else:
-            c = source[i]
-            if c in spaces:
-                i += 1
-                continue
-            match c:
+            i = _ignore_chars(i, source, spaces)
+            match source[i]:
                 case "{":
-                    buffer_for = _Item.KEY
-                case ":":
-                    buffer_for = _Item.VALUE
+                    i = _ignore_chars(i, source, spaces)
+                    parsing_keyvalue_pair = True
                 case ",":
-                    buffer_for = _Item.KEY
+                    i = _ignore_chars(i, source, spaces)
+                    parsing_keyvalue_pair = True
                 case "}":
                     return result
-
         i += 1
     raise InvalidJson
+
+def _ignore_chars(i: int, source: str, to_ignore: set[str]) -> int:
+    for j in range(i, len(source) - 1):
+        c = source[j]
+        if c not in to_ignore:
+            return j
+    return i
+
+
+def _grab_key(i: int, source: str) -> tuple[int, str]:
+    buffer = source[i]
+    if buffer != '"':
+        raise InvalidJson
+    quotes_count = 1
+    for j in range(i+1, len(source) - 1, 1):
+        c = source[j]
+        buffer += c
+        if c == '"':
+            quotes_count += 1
+            if quotes_count >= 2:
+                break
+    else:
+        raise InvalidJson
+    return j, buffer[1:-1]
+
+def _grab_value(i: int, source: str, termination_chars: set[str]) -> tuple[int, str]:
+    buffer = ""
+    for j in range(i, len(source) - 1, 1):
+        buffer += source[j]
+        if source[j+1] in termination_chars:
+            return j, buffer
+    raise InvalidJson
+
+def _parse_basic_values(buffer: str) -> None | bool | str | int | float:
+    buffer = buffer.lstrip().rstrip()
+    if buffer.startswith('"') and buffer.endswith('"'):
+        return buffer[1:-1]
+    elif buffer == "true":
+        return True
+    elif buffer == "false":
+        return False
+    elif buffer == "null":
+        return None
+    else:
+        try:
+            return int(buffer)
+        except ValueError:
+            try:
+                return float(buffer)
+            except ValueError:
+                raise InvalidJson
+    

@@ -1,6 +1,6 @@
 import string
 from enum import Enum
-from typing import Any, Callable, Protocol, TypeVar
+from typing import Any, Callable
 
 
 class InvalidJson(Exception):
@@ -8,7 +8,7 @@ class InvalidJson(Exception):
 
 
 def parse(source: str, /) -> dict[str, Any] | list[Any]:
-    result = _parse(source)
+    result = _parse(source.rstrip())
     if isinstance(result, (dict, list)):
         return result
     raise InvalidJson
@@ -64,6 +64,7 @@ def _parse(source: str) -> None | bool | int | float | str | list[Any] | dict[st
                 or x in "]}",
             )
         elif c == end:
+            _advance_until_or_fail(i + 1, source, _is_not_space)
             if object_type is _ObjectType.OBJECT:
                 return dict_container
             else:

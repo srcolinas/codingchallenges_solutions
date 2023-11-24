@@ -10,6 +10,7 @@ from pyccjsonparser.parser import parse, InvalidJson
     [
         ("{}", {}),
         ('{"key": "value"}', {"key": "value"}),
+        ('{"key": "value"}\n', {"key": "value"}),
         ('{  "k ey"   :    "val\tue"  \n}', {"k ey": "val\tue"}),
         ('{"key": "value",\n"key2": "value"}', {"key": "value", "key2": "value"}),
         (

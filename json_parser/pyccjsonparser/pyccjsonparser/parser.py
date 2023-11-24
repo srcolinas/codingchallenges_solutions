@@ -1,4 +1,5 @@
 import string
+from enum import Enum
 from typing import Any, Callable, Protocol, TypeVar
 
 
@@ -7,93 +8,100 @@ class InvalidJson(Exception):
 
 
 def parse(source: str, /) -> dict[str, Any] | list[Any]:
-    if not source:
-        raise InvalidJson
-    if source.startswith("{"):
-        result: dict[str, Any] = {}
-        update_op = _update_dict
-        end = "}"
-    elif source.startswith("["):
-        raise InvalidJson
-    else:
-        raise InvalidJson
-    i = _ignore_spaces(0, source)
-    return _parse(i, source, result, update_op, end)[1]
-
-
-T = TypeVar("T")
-
-
-def _parse(
-    i: int, source: str, container: T, update_op: Callable[[int, str, T], int], end: str
-) -> tuple[int, T]:
-    if source == "{}" or source == "[]":
-        return i, container
-    i = _ignore_spaces(i, source)
-    i = update_op(i + 1, source, container)
-    i = _ignore_spaces(i +1, source)
-    if i == -1:
-        return i, container
-    while i < len(source):
-        c = source[i]
-        if c == ",":
-            i = _ignore_spaces(i, source)
-            i = update_op(i + 1, source, container)
-            i = _ignore_spaces(i, source)
-        elif c == end:
-            j = _ignore_spaces(i + 1, source)
-            if j != -1:
-                raise InvalidJson
-            return i, container
-        else:
-            i, _ = _grab_until(i, source, ",}]")
+    result = _parse(source)
+    if isinstance(result, (dict, list)):
+        return result
     raise InvalidJson
 
 
-def _update_dict(i: int, source: str, container: dict[str, Any], /) -> int:
-    if i == -1:
-        raise InvalidJson
-    i = _ignore_spaces(i, source)
-    i, key = _grab_key(i, source)
-    i = _ignore_spaces(i+1, source)
-    if source[i] != ":":
-        raise InvalidJson
-    i = _ignore_spaces(i + 1, source)
-    i, value = _grab_value(i, source)
-    container[key] = value
-    return i
+class _ObjectType(Enum):
+    ARRAY = 1
+    OBJECT = 2
 
 
-def _update_list(i: int, source: str, container: list[Any], /) -> int:
-    if i == -1:
+def _parse(source: str) -> None | bool | int | float | str | list[Any] | dict[str, Any]:
+    if not source:
         raise InvalidJson
+    if source.startswith('"') and source.endswith('"'):
+        return source[1:-1]
+    elif source[0].isdecimal() and source[-1].isdecimal():
+        try:
+            return int(source)
+        except ValueError:
+            try:
+                return float(source)
+            except ValueError:
+                raise InvalidJson
+    elif source == "true":
+        return True
+    elif source == "false":
+        return False
+    elif source == "null":
+        return None
+    elif source.startswith("{") and source.endswith("}"):
+        dict_container: dict[str, Any] = {}
+        end = "}"
+        object_type = _ObjectType.OBJECT
+    elif source.startswith("[") and source.endswith("]"):
+        list_container: list[Any] = []
+        end = "]"
+        object_type = _ObjectType.ARRAY
+    else:
+        raise InvalidJson
+
+    i = 0
     while i < len(source):
-        i = _ignore_spaces(i + 1, source)
-        i, value = _grab_value(i, source)
-        container.append(value)
-    return i
+        c = source[i]
+        if c == ",":
+            i = _advance_until_or_fail(
+                i + 1,
+                source,
+                lambda x: x in '"[{'
+                or (x.isdecimal() and object_type is _ObjectType.ARRAY),
+                fail_predicate=lambda x: (
+                    x.isalnum() and object_type is _ObjectType.OBJECT
+                )
+                or x in "]}",
+            )
+        elif c == end:
+            if object_type is _ObjectType.OBJECT:
+                return dict_container
+            else:
+                return list_container
+        elif c in "[{":
+            i = _advance_until_or_fail(i + 1, source, _is_not_space)
+            if source[i] in ",.":
+                raise InvalidJson
+        else:
+            if object_type is _ObjectType.OBJECT:
+                i = _advance_until_or_fail(i, source, lambda x: x == '"')
+                i, key = _grab_key(i, source)
+                i = _advance_until_or_fail(i + 1, source, lambda x: x == ":")
+                i = _advance_until_or_fail(i + 1, source, _is_not_space)
+                j = _find_value_ends(i, source)
+                parsed_value = _parse(source[i : j + 1])
+                dict_container[key] = parsed_value
+                i = j + 1
+            else:
+                i = _advance_until_or_fail(
+                    i, source, lambda x: x in '"tfn' or x.isdecimal()
+                )
+                j = _find_value_ends(i, source)
+                parsed_value = _parse(source[i : j + 1])
+                list_container.append(parsed_value)
+                i = j + 1
+            i = _advance_until_or_fail(i, source, lambda x: x in ",}]")
+    raise InvalidJson
+
+
+def _is_not_space(x: str) -> bool:
+    return x not in _SPACES
 
 
 _SPACES = set(string.whitespace)
 
 
-def _ignore_spaces(i: int, source: str) -> int:
-    """
-    Return the index of the next character that is not a space. Returns `-1` if
-    all subsequent characters are spaces.
-    """
-    if i == -1:
-        raise InvalidJson
-    for j in range(i, len(source)):
-        c = source[j]
-        if c not in _SPACES:
-            return j
-    return -1
-
-
 def _grab_key(i: int, source: str) -> tuple[int, str]:
-    if i == -1:
-        raise InvalidJson
     buffer = source[i]
     if buffer != '"':
         raise InvalidJson
@@ -109,63 +117,74 @@ def _grab_key(i: int, source: str) -> tuple[int, str]:
         raise InvalidJson
     return j, buffer[1:-1]
 
-def _grab_value(i: int, source: str) -> tuple[int, None | bool | int | float |str | list[Any], dict[str, Any]]:
-    if i == -1:
+
+def _find_value_ends(i: int, source: str) -> int:
+    try:
+        c = source[i]
+    except IndexError:
         raise InvalidJson
-    c = source[i]
     if c == "{":
-        return _parse(i, source, {}, _update_dict, "}")
+        return _advance_until_closed(i, source, "{", "}")
     elif c == "[":
-        return _parse(i, source, [], _update_list, "]")
+        return _advance_until_closed(i, source, "[", "]")
     else:
         if c == '"':
-            i, value = _grab_until(i + 1, source, '"')
-            value = value[:-1]
+            j = _advance_until_or_fail(i + 1, source, lambda x: x == '"')
+            return j
         elif c == "t":
-            _grab_while(i, source, 'true')
-            i, value = i + 3, True
+            _valid_while(i, source, "true")
+            return i + 3
         elif c == "f":
-            _grab_while(i, source, 'false')
-            i, value = i + 4, False
+            _valid_while(i, source, "false")
+            return i + 4
         elif c == "n":
-            _grab_while(i, source, 'null')
-            i, value = i + 3, None
+            _valid_while(i, source, "null")
+            return i + 3
         elif c.isdecimal():
-            i, value = _grab_until(i, source, _SPACES.union(".]}"))
-            if value.endswith("."):
-                raise InvalidJson
-            if value.endswith("}") or value.endswith("]"):
-                value = value[:-1]
-            try:
-                value = int(value)
-            except ValueError:
-                try:
-                    value = float(value)
-                except ValueError:
-                    raise InvalidJson
+            j = _advance_until_or_fail(
+                i, source, predicate=lambda x: x in _SPACES.union(",}]")
+            )
+            return j - 1
         else:
             raise InvalidJson
-    
-        return i, value
 
-class _Container(Protocol):
-    def __contains__(self, a: Any) -> bool:
-        ...
 
-def _grab_until(i: int, source: str, to_stop: _Container) -> tuple[int, str]:
-    if i == -1:
-        raise InvalidJson
-    buffer = ""
+def _advance_until_closed(i: int, source: str, open: str, close: str) -> int:
+    sum = 0
     for j in range(i, len(source)):
         c = source[j]
-        buffer += c
-        if c in to_stop:
-            return j, buffer
+        if c == open:
+            sum += 1
+        if c == close:
+            sum -= 1
+
+        if sum == 0:
+            return j
     raise InvalidJson
 
-def _grab_while(i: int, source: str, expected: str) -> None:
-    if i == -1:
-        raise InvalidJson
+
+def _advance_until_or_fail(
+    i: int,
+    source: str,
+    predicate: Callable[[str], bool],
+    fail_predicate: Callable[[str], bool] | None = None,
+) -> int:
+    if fail_predicate is None:
+        fail_predicate = _return_false
+    for j in range(i, len(source)):
+        c = source[j]
+        if predicate(c):
+            return j
+        if fail_predicate(c):
+            raise InvalidJson
+    return -1
+
+
+def _return_false(_: str) -> bool:
+    return False
+
+
+def _valid_while(i: int, source: str, expected: str) -> None:
     for j in range(len(expected)):
         if source[i + j] != expected[j]:
             raise InvalidJson

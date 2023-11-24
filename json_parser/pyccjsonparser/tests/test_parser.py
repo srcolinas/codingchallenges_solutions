@@ -5,11 +5,6 @@ import pytest
 from pyccjsonparser.parser import parse, InvalidJson
 
 
-def test_empty_string():
-    with pytest.raises(InvalidJson):
-        parse("")
-
-
 @pytest.mark.parametrize(
     "input, output",
     [

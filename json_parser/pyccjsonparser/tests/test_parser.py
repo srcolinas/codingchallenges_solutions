@@ -21,6 +21,19 @@ def test_empty_string():
             '{"key1": true, "key2": false, "key3": null, "key4": "value", "key5": 101}',
             {"key1": True, "key2": False, "key3": None, "key4": "value", "key5": 101},
         ),
+        (
+            '{"key": "value", "key-n": 101, "key-o": {}, "key-l": []}',
+            {"key": "value", "key-n": 101, "key-o": {}, "key-l": []},
+        ),
+        (
+            '{"key": "", "key-n": 101, "key-o": { "inner key": "inner value"},"key-l": ["list value"]}',
+            {
+                "key": "",
+                "key-n": 101,
+                "key-o": {"inner key": "inner value"},
+                "key-l": ["list value"],
+            },
+        ),
     ],
 )
 def test_valid_cases(input: str, output: dict[str, Any]):
@@ -35,6 +48,7 @@ def test_valid_cases(input: str, output: dict[str, Any]):
         '{"key": "value",}',
         '{"key": "value", key2: "value"}',
         '{"key1": true,"key2": False,"key3": null,\n "key4": "value", "key5": 101}',
+        """{"key": "value","key-n": 101, "key-o": {"inner key": "inner value"}, "key-l": ['list value']}""",
     ],
 )
 def test_invalid_cases(input: str):

@@ -57,7 +57,7 @@ def test_extra_files(pytestconfig: pytest.Config):
     dirname = pytestconfig.getoption("extra", None)
     if dirname is None:
         return
-    for filepath, _, _ in Path(dirname).glob("*.json"):
+    for filepath in Path(dirname).glob("*.json"):
         if filepath.name.startswith("fail"):
             assert 2 == main(filepath)
         elif filepath.name.startswith("pass"):

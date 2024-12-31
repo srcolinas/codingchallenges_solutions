@@ -28,7 +28,7 @@ def lex(payload: Iterator[str]) -> Iterator[Token]:
             yield None
         elif c in _SPACES:
             continue  # Skip white space characters
-        elif c in _NUMERIC_CHARACTERS:
+        elif c in _NUMERIC_CHARACTERS or c == "-":
             # Lex numeric value and continue depending on next character
             number, next_char = _lex_numeric(payload, c)
             yield number
@@ -80,8 +80,13 @@ def _lex_string(payload: Iterator[str]) -> str:
     for c in payload:
         if c == '"':
             break
+        if not c.isalnum() and c not in _VALID_NON_ALPHANUMERIC_CHARACTERS:
+            raise ValueError
         content += c
     return content
+
+
+_VALID_NON_ALPHANUMERIC_CHARACTERS = {"-", " "}
 
 
 def _lex_numeric(payload: Iterator[str], c: str) -> tuple[float | int, str]:
@@ -100,6 +105,9 @@ def _lex_numeric(payload: Iterator[str], c: str) -> tuple[float | int, str]:
                 break
             number += c
         return float(number), c
+
+    if number.startswith("0"):
+        raise ValueError("integer values shouldn't start with 0")
     return int(number), c
 
 

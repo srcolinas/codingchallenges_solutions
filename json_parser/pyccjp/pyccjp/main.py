@@ -11,8 +11,8 @@ def main(file: pathlib.Path) -> int:
 
     try:
         parser.parse(lexer.lex(_character_iterator(file)))
-    except ValueError:
-        print("File has invalid content")
+    except ValueError as e:
+        print(f"File has invalid content, got error {e}")
         return 1
 
     return 0

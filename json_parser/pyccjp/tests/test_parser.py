@@ -13,10 +13,15 @@ from pyccjp.parser import parse, JsonSyntax, Token
         [JsonSyntax.LEFT_BRACE, JsonSyntax.COMMA],
         [JsonSyntax.LEFT_BRACE, JsonSyntax.RIGHT_BRACE, JsonSyntax.COMMA],
         [JsonSyntax.LEFT_BRACE, "key", JsonSyntax.RIGHT_BRACE],
+        [JsonSyntax.LEFT_BRACE, "key", JsonSyntax.COMMA, JsonSyntax.RIGHT_BRACE],
         [JsonSyntax.RIGHT_BRACKET],
         [JsonSyntax.RIGHT_BRACKET, JsonSyntax.LEFT_BRACKET],
         [JsonSyntax.LEFT_BRACKET, JsonSyntax.COLON],
+        [JsonSyntax.LEFT_BRACKET, JsonSyntax.COMMA],
+        [JsonSyntax.LEFT_BRACKET, "key"],
+        [JsonSyntax.LEFT_BRACKET, "key", JsonSyntax.COMMA, JsonSyntax.RIGHT_BRACKET],
         [JsonSyntax.LEFT_BRACKET, JsonSyntax.RIGHT_BRACKET, JsonSyntax.COMMA],
+        [JsonSyntax.LEFT_BRACKET, JsonSyntax.COMMA, "key", JsonSyntax.RIGHT_BRACKET],
     ],
 )
 def test_ValueError_for_invalid_input(tokens: list[Token]):
@@ -28,6 +33,7 @@ def test_ValueError_for_invalid_input(tokens: list[Token]):
 def test_parses_empty_object():
     object = parse(iter([JsonSyntax.LEFT_BRACE, JsonSyntax.RIGHT_BRACE]))
     assert object == {}
+
 
 @pytest.mark.parametrize("value", [True, False, 3, 3.14, "pi", None])
 def test_parses_object_with_scalar_value_types(value: bool | int | float | str | None):

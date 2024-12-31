@@ -35,35 +35,21 @@ def parse(
         result = _parse_array(tokens)
     else:
         raise ValueError(f"invalid leading token {lead}")
-    
-    _consume_until_end(tokens)
+    for t in tokens:
+        raise ValueError(f"invalid end character {t}")
     return result
 
-def _consume_until_end(tokens: Iterator[Token]) -> None:
-    i = -1
-    for i, t in enumerate(tokens):
-        if i > 0:
-            raise ValueError(f"incorrect finish token")
-        if t is JsonSyntax.RIGHT_BRACE:
-            break
-    else:
-        if i > -1:
-            raise ValueError(f"incorrect finish token")
-    for t in tokens:
-        raise ValueError(f"incorrect finish token")
-            
 
 def _parse_object(tokens: Iterator[Token]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key in tokens:
         if key is JsonSyntax.RIGHT_BRACE:
-            break
+            return result
         if key is JsonSyntax.COMMA:
             try:
                 key = next(tokens)
             except StopIteration:
                 raise ValueError
-            
 
         if not isinstance(key, str):
             raise ValueError(f"key {key} should be a string")
@@ -73,20 +59,28 @@ def _parse_object(tokens: Iterator[Token]) -> dict[str, Any]:
 
         value = _handle_leading_token(next(tokens), tokens)
         result[key] = value
-
-    return result
+    raise ValueError
 
 
 def _parse_array(tokens: Iterator[Token]) -> list[Any]:
     result: list[Any] = []
+    tail_is_comma = False
     for t in tokens:
         if t is JsonSyntax.RIGHT_BRACKET:
-            break
+            if tail_is_comma:
+                raise ValueError(
+                    "the last element of an array should be a value, got comma"
+                )
+            return result
         if t is JsonSyntax.COMMA:
+            if not result:
+                raise ValueError("comma was found before value in list")
+            tail_is_comma = True
             continue
         value = _handle_leading_token(t, tokens)
         result.append(value)
-    return result
+        tail_is_comma = False
+    raise ValueError
 
 
 def _handle_leading_token(
@@ -99,4 +93,3 @@ def _handle_leading_token(
     elif isinstance(t, (str, bool, int, float)) or t is None:
         return t
     raise ValueError(f"got {t}")
-

@@ -57,11 +57,31 @@ def test_size_n_object():
     ]
 
 
+def test_ValueError_for_leading_zero_in_int():
+    tokens = lex(iter('{"key": 031}'))
+    assert next(tokens) == JsonSyntax.LEFT_BRACE
+    assert next(tokens) == "key"
+    assert next(tokens) == JsonSyntax.COLON
+    with pytest.raises(ValueError):
+        next(tokens)
+
+
+def test_ValueError_for_illegal_backslash_escape():
+    tokens = lex(iter('["Illegal backslash escape: \017"]'))
+    assert next(tokens) == JsonSyntax.LEFT_BRACKET
+    with pytest.raises(ValueError):
+        next(tokens)
+
+
 def test_ValueError_for_unquoted_key():
     result = lex(iter('{key: "value"}'))
     next(result)
     with pytest.raises(ValueError):
         next(result)
+
+def test_handles_negative_numbers():
+    result = lex(iter('{"key": -1}'))
+    assert list(result) == [JsonSyntax.LEFT_BRACE, "key", JsonSyntax.COLON, -1, JsonSyntax.RIGHT_BRACE]
 
 
 def test_object_with_string_numeric_or_null_values():

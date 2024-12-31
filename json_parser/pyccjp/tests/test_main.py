@@ -13,7 +13,7 @@ from pyccjp import main
         '{"key": "value", key2: "value"}',
         '{"key1": true,"key2": False,"key3": null,"key4": "value","key5": 101}',
         '{"key": "value","key-n": 101,"key-o": {"inner key": "inner value"}, "key-l": [\'list value\']}',
-        '[""'
+        '[""',
     ],
 )
 def test_1_for_invalid_json(payload: str, tmp_path: pathlib.Path):

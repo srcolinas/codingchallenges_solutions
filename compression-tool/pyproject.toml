@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "src"
+version = "0.1.0"
+description = ""
+authors = ["Sebastian Rodriguez Colina <srcolinas@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.9.3"
+mypy = "^1.14.1"
+pytest = "^8.3.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.scripts]
+pyccct = "src.main:_cli"
+
+
+[tool.mypy]
+ignore_missing_imports = false
+check_untyped_defs = true
+
+[tool.ruff]
+line-length = 80

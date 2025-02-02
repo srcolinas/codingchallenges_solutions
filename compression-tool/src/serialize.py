@@ -1,4 +1,3 @@
-import itertools
 
 from src import huffman
 

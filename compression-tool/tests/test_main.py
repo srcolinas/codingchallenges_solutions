@@ -1,5 +1,4 @@
 import pathlib
-import shutil
 
 from src import main
 

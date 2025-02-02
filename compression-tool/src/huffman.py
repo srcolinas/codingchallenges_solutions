@@ -16,7 +16,7 @@ class HuffmanTree:
     @classmethod
     def from_frequenceies(cls, frequencies: Mapping[str, int]) -> "HuffmanTree":
         trees: list[HuffmanTree] = []
-        for k, v in sorted(frequencies.items()):
+        for k, v in frequencies.items():
             heapq.heappush(trees, cls(weight=v, key=k))
 
         while len(trees) > 1:
